@@ -46,8 +46,7 @@ int kb_hit();
 
 void trouver_position_joueur(t_Plateau plateau, int *posX, int *posY);
 char lire_touche();
-bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier,
-                             int *nombreDeplacements);
+bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements);
 void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX,
                      int deltaY, int *nombreDeplacements);
 
@@ -142,8 +141,7 @@ void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
         return;
     }
 
-    if (traiter_touche_speciale(touche, plateau, nomFichier,
-                                nombreDeplacements)) {
+    if (traiter_touche_speciale(touche, plateau, nomFichier, nombreDeplacements)) {
         return;
     }
 
@@ -206,8 +204,7 @@ char lire_touche() {
  * @param nombreDeplacements int* E/S : compteur de déplacements.
  * @return true si l'action consomme le tour, false sinon.
  */
-bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier,
-                             int *nombreDeplacements) {
+bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
     if (touche == QUITTER) {
         printf("Voulez-vous sauvegarder avant de quitter ? (o/n) : ");
         char reponse;
