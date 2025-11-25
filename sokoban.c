@@ -32,23 +32,25 @@ const char DROITE = 'd';
 const char QUITTER = 'x';
 const char RECOMMENCER = 'r';
 const char OUI = 'o';
+const char ZOOM_IN = 'p';
+const char ZOOM_OUT = 'm';
 
 typedef char t_Plateau[TAILLE][TAILLE];
+typedef char t_tabDeplacement[1000];
 
 /* --- Prototypes --- */
 void charger_partie(t_Plateau plateau, char fichier[]);
 void enregistrer_partie(t_Plateau plateau, char fichier[]);
 void afficher_entete(char *nomFichier, int nombreDeplacements);
-void afficher_plateau(t_Plateau plateau);
-void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements);
+void afficher_plateau(t_Plateau plateau, int zoom);
+void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom);
 bool gagne(t_Plateau plateau);
 int kb_hit();
 
 void trouver_position_joueur(t_Plateau plateau, int *posX, int *posY);
 char lire_touche();
-bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements);
-void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX,
-                     int deltaY, int *nombreDeplacements);
+bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom);
+void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements);
 
 /* ========================================================= */
 /*                         MAIN                              */
@@ -58,24 +60,24 @@ void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX,
  * @brief Fonction principale du jeu Sokoban.
  * @return EXIT_SUCCESS après la victoire.
  */
-int main() {
+int main(){
     t_Plateau plateau;
     char nomFichier[50];
     int nombreDeplacements = 0;
+    int zoom = 1; 
 
     printf("Saisis le nom d'un fichier (.sok) : ");
     scanf("%s", nomFichier);
 
     charger_partie(plateau, nomFichier);
     afficher_entete(nomFichier, nombreDeplacements);
-    afficher_plateau(plateau);
+    afficher_plateau(plateau,zoom);
 
     while (!gagne(plateau)) {
-        deplacer(plateau, nomFichier, &nombreDeplacements);
+        deplacer(plateau, nomFichier, &nombreDeplacements, &zoom);
     }
 
-    printf("\n🎉 Félicitations, vous avez gagné en %d déplacements ! 🎉\n",
-           nombreDeplacements);
+    printf("\n🎉 Félicitations, vous avez gagné en %d déplacements ! 🎉\n", nombreDeplacements);
     return EXIT_SUCCESS;
 }
 
@@ -102,25 +104,31 @@ void afficher_entete(char *nomFichier, int nombreDeplacements) {
  * @brief Affiche visuellement le plateau de jeu.
  * @param plateau t_Plateau E : état actuel du plateau.
  */
-void afficher_plateau(t_Plateau plateau) {
+void afficher_plateau(t_Plateau plateau, int zoom) {
     for (int i = 0; i < TAILLE; i++) {
-        for (int j = 0; j < TAILLE; j++) {
-            char caseCourante = plateau[i][j];
+        for (int ligne = 0; ligne < zoom; ligne++){
+            for (int j = 0; j < TAILLE; j++) {
+                char caseCourante = plateau[i][j];
 
-            if (caseCourante == PERSONNAGE ||
-                caseCourante == PERSONNAGE_SUR_CIBLE) {
-                printf("%c", PERSONNAGE);
-            } else if (caseCourante == CAISSE ||
-                       caseCourante == CAISSE_SUR_CIBLE) {
-                printf("%c", CAISSE);
-            } else {
-                printf("%c", caseCourante);
+                if (caseCourante == PERSONNAGE || caseCourante == PERSONNAGE_SUR_CIBLE) {
+                    for (int k = 0; k < zoom; k++)
+                        {
+                            printf("%c", PERSONNAGE);
+                        }
+                } else if (caseCourante == CAISSE || caseCourante == CAISSE_SUR_CIBLE) {
+                    for (int k = 0; k < zoom; k++)
+                        {
+                            printf("%c", CAISSE);
+                        }
+                } else {
+                    for (int k = 0; k < zoom; k++)
+                        printf("%c", caseCourante);
+                }
             }
+            printf("\n");
         }
-        printf("\n");
     }
 }
-
 /* ========================================================= */
 /*                   DÉPLACEMENTS DU JOUEUR                 */
 /* ========================================================= */
@@ -131,7 +139,7 @@ void afficher_plateau(t_Plateau plateau) {
  * @param nomFichier char* E : nom du fichier chargé.
  * @param nombreDeplacements int* E/S : compteur à incrémenter.
  */
-void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
+void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom) {
     int posX = -1;
     int posY = -1;
     trouver_position_joueur(plateau, &posX, &posY);
@@ -141,7 +149,7 @@ void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
         return;
     }
 
-    if (traiter_touche_speciale(touche, plateau, nomFichier, nombreDeplacements)) {
+    if (traiter_touche_speciale(touche, plateau, nomFichier, nombreDeplacements, zoom)) {
         return;
     }
 
@@ -161,9 +169,8 @@ void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
     }
 
     deplacer_joueur(plateau, posX, posY, deltaX, deltaY, nombreDeplacements);
-
     afficher_entete(nomFichier, *nombreDeplacements);
-    afficher_plateau(plateau);
+    afficher_plateau(plateau,*zoom);
 }
 
 /**
@@ -175,8 +182,7 @@ void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
 void trouver_position_joueur(t_Plateau plateau, int *posX, int *posY) {
     for (int i = 0; i < TAILLE; i++) {
         for (int j = 0; j < TAILLE; j++) {
-            if (plateau[i][j] == PERSONNAGE ||
-                plateau[i][j] == PERSONNAGE_SUR_CIBLE) {
+            if (plateau[i][j] == PERSONNAGE || plateau[i][j] == PERSONNAGE_SUR_CIBLE) {
                 *posX = i;
                 *posY = j;
                 return;
@@ -204,7 +210,7 @@ char lire_touche() {
  * @param nombreDeplacements int* E/S : compteur de déplacements.
  * @return true si l'action consomme le tour, false sinon.
  */
-bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements) {
+bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom) {
     if (touche == QUITTER) {
         printf("Voulez-vous sauvegarder avant de quitter ? (o/n) : ");
         char reponse;
@@ -229,8 +235,21 @@ bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, i
             charger_partie(plateau, nomFichier);
             *nombreDeplacements = 0;
             afficher_entete(nomFichier, *nombreDeplacements);
-            afficher_plateau(plateau);
+            afficher_plateau(plateau,*zoom);
         }
+        return true;
+    }
+
+    if (touche == ZOOM_IN && *zoom < 3){
+        (*zoom)++;
+        afficher_entete(nomFichier, *nombreDeplacements);
+        afficher_plateau(plateau, *zoom);
+        return true;
+    }
+    else if (touche == ZOOM_OUT && *zoom > 1){
+        (*zoom)--;
+        afficher_entete(nomFichier, *nombreDeplacements);
+        afficher_plateau(plateau, *zoom);
         return true;
     }
 
@@ -266,26 +285,39 @@ void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int delt
             return;
         }
 
-        plateau[apresCaisseX][apresCaisseY] =
-            (caseApresCaisse == CIBLE) ? CAISSE_SUR_CIBLE : CAISSE;
+        if (caseApresCaisse == CIBLE) {
+            plateau[apresCaisseX][apresCaisseY] = CAISSE_SUR_CIBLE;
+        } else {
+            plateau[apresCaisseX][apresCaisseY] = CAISSE;
+        }
 
-        plateau[nouvelleX][nouvelleY] =
-            (caseCible == CAISSE_SUR_CIBLE) ? PERSONNAGE_SUR_CIBLE : PERSONNAGE;
+        if (caseCible == CAISSE_SUR_CIBLE) {
+            plateau[nouvelleX][nouvelleY] = PERSONNAGE_SUR_CIBLE;
+        } else {
+            plateau[nouvelleX][nouvelleY] = PERSONNAGE;
+        }
+
 
     } else if (caseCible == VIDE || caseCible == CIBLE) {
-        plateau[nouvelleX][nouvelleY] =
-            (caseCible == CIBLE) ? PERSONNAGE_SUR_CIBLE : PERSONNAGE;
+        if (caseCible == CIBLE) {
+            plateau[nouvelleX][nouvelleY] = PERSONNAGE_SUR_CIBLE;
+        } else {
+            plateau[nouvelleX][nouvelleY] = PERSONNAGE;
+        }
+
     } else {
         return;
     }
 
-    plateau[posX][posY] =
-        (caseActuelle == PERSONNAGE_SUR_CIBLE) ? CIBLE : VIDE;
-
+    if (caseActuelle == PERSONNAGE_SUR_CIBLE) {
+        plateau[posX][posY] = CIBLE;
+    } else {
+        plateau[posX][posY] = VIDE;
+    }
     (*nombreDeplacements)++;
 }
 
-/* ========================================================= */
+ /* ========================================================= */
 /*                         VICTOIRE                          */
 /* ========================================================= */
 
