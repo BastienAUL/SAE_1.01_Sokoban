@@ -64,10 +64,12 @@ niveau1.sok
 
 Chaque niveau est un tableau ASCII `TAILLE x TAILLE` (par défaut 12×12) utilisant ces caractères :
 
-PERSONNAGE = '@';
-CAISSE = '$';
-MUR = '#';
-CIBLE = '.';
+| Signification | Caractère |
+|--------|--------|
+| PERSONNAGE | @ |
+|   CAISSE   | $ |
+|    MUR     | # |
+|   CIBLE    | . |
 
 Exemple :
 
