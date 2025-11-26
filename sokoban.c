@@ -109,20 +109,20 @@ void afficher_plateau(t_Plateau plateau, int zoom) {
         for (int ligne = 0; ligne < zoom; ligne++){
             for (int j = 0; j < TAILLE; j++) {
                 char caseCourante = plateau[i][j];
-
                 if (caseCourante == PERSONNAGE || caseCourante == PERSONNAGE_SUR_CIBLE) {
-                    for (int k = 0; k < zoom; k++)
-                        {
-                            printf("%c", PERSONNAGE);
-                        }
-                } else if (caseCourante == CAISSE || caseCourante == CAISSE_SUR_CIBLE) {
-                    for (int k = 0; k < zoom; k++)
-                        {
-                            printf("%c", CAISSE);
-                        }
-                } else {
-                    for (int k = 0; k < zoom; k++)
+                    for (int k = 0; k < zoom; k++){
+                        printf("%c", PERSONNAGE);
+                    }
+                }
+                else if (caseCourante == CAISSE || caseCourante == CAISSE_SUR_CIBLE) {
+                    for (int k = 0; k < zoom; k++){
+                        printf("%c", CAISSE);
+                    }
+                }
+                else{
+                    for (int k = 0; k < zoom; k++){
                         printf("%c", caseCourante);
+                    }
                 }
             }
             printf("\n");
