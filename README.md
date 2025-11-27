@@ -8,13 +8,14 @@ Le but : pousser toutes les caisses ($) sur les cibles (.) en un minimum de coup
 ## 🎮 Fonctionnalités
 
 - Mouvement du joueur : **↑ ↓ ← →**
-- Poussée des caisses (uniquement si la case derrière est libre)
+- Poussée des caisses
 - Détection de **victoire**
 - Chargement d’un niveau depuis un fichier
 - Réinitialisation du niveau
 - Interface 100% terminal
 - Gestion des collisions (murs, limites, caisses bloquées)
 - Zoom et Dezoom du plateau
+- Retour en arrière
 
 ---
 
