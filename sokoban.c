@@ -122,7 +122,8 @@ void afficher_entete(char *nomFichier, int nombreDeplacements) {
  * @param zoom int E : nombre de répétitions.
  */
 void afficher_caractere_zoom(char c, int zoom) {
-    for (int k = 0; k < zoom; k++) {
+    int boucle;
+    for (boucle = 0; boucle < zoom; boucle++) {
         printf("%c", c);
     }
 }
@@ -333,11 +334,11 @@ bool est_poussee(char code) {
  * @param dy int E : direction Y du déplacement annulé.
  */
 void annuler_poussee_caisse(t_Plateau plateau, int px, int py, int dx, int dy) {
-    int box_x = px + dx;
-    int box_y = py + dy;
+    int boxX = px + dx;
+    int boxY = py + dy;
     bool caisse_etait_sur_cible;
 
-    caisse_etait_sur_cible = (plateau[box_x][box_y] == CAISSE_SUR_CIBLE);
+    caisse_etait_sur_cible = (plateau[boxX][boxY] == CAISSE_SUR_CIBLE);
 
     if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) {
         plateau[px][py] = CAISSE_SUR_CIBLE;
@@ -346,9 +347,9 @@ void annuler_poussee_caisse(t_Plateau plateau, int px, int py, int dx, int dy) {
     }
 
     if (caisse_etait_sur_cible) {
-        plateau[box_x][box_y] = CIBLE;
+        plateau[boxX][boxY] = CIBLE;
     } else {
-        plateau[box_x][box_y] = VIDE;
+        plateau[boxX][boxY] = VIDE;
     }
 }
 
@@ -386,8 +387,8 @@ void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *i
     int py = -1;
     int dx = 0;
     int dy = 0;
-    int prev_x;
-    int prev_y;
+    int prevX;
+    int prevY;
     char code;
 
     if (*ind == 0) {
@@ -400,14 +401,14 @@ void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *i
     determiner_direction(code, &dx, &dy);
     trouver_position_joueur(plateau, &px, &py);
     
-    prev_x = px - dx;
-    prev_y = py - dy;
+    prevX = px - dx;
+    prevY = py - dy;
 
     if (est_poussee(code)) {
         annuler_poussee_caisse(plateau, px, py, dx, dy);
     }
 
-    restaurer_position_joueur(plateau, px, py, prev_x, prev_y);
+    restaurer_position_joueur(plateau, px, py, prevX, prevY);
 
     if (*nb > 0) {
         (*nb)--;
