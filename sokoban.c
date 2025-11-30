@@ -452,56 +452,42 @@ char determiner_code_mouvement(int deltaX, int deltaY, bool pousse) {
 void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements, t_tabDeplacement deplacement, int *indiceDeplacement) {
     int nouvelleX = posX + deltaX;
     int nouvelleY = posY + deltaY;
+
     char caseCible = plateau[nouvelleX][nouvelleY];
     char caseActuelle = plateau[posX][posY];
     bool joueurPousse = false;
 
-    if (caseCible == MUR) {
-        return;
-    }
+    if (caseCible == MUR) return;
 
     if (caseCible == CAISSE || caseCible == CAISSE_SUR_CIBLE) {
+
         int apresCaisseX = nouvelleX + deltaX;
         int apresCaisseY = nouvelleY + deltaY;
         char caseApresCaisse = plateau[apresCaisseX][apresCaisseY];
 
-        if (caseApresCaisse != VIDE && caseApresCaisse != CIBLE) {
-            return;
-        }
+        if (caseApresCaisse != VIDE && caseApresCaisse != CIBLE) return;
 
-        if (caseApresCaisse == CIBLE) {
-            plateau[apresCaisseX][apresCaisseY] = CAISSE_SUR_CIBLE;
-        } else {
-            plateau[apresCaisseX][apresCaisseY] = CAISSE;
-        }
+        plateau[apresCaisseX][apresCaisseY] =
+            (caseApresCaisse == CIBLE) ? CAISSE_SUR_CIBLE : CAISSE;
 
-        if (caseCible == CAISSE_SUR_CIBLE) {
-            plateau[nouvelleX][nouvelleY] = PERSONNAGE_SUR_CIBLE;
-        } else {
-            plateau[nouvelleX][nouvelleY] = PERSONNAGE;
-        }
+        plateau[nouvelleX][nouvelleY] = (caseCible == CAISSE_SUR_CIBLE) ? PERSONNAGE_SUR_CIBLE : PERSONNAGE;
+
         joueurPousse = true;
 
     } else if (caseCible == VIDE || caseCible == CIBLE) {
-        if (caseCible == CIBLE) {
-            plateau[nouvelleX][nouvelleY] = PERSONNAGE_SUR_CIBLE;
-        } else {
-            plateau[nouvelleX][nouvelleY] = PERSONNAGE;
-        }
+
+        plateau[nouvelleX][nouvelleY] = (caseCible == CIBLE) ? PERSONNAGE_SUR_CIBLE : PERSONNAGE;
+
     } else {
         return;
     }
 
-    if (caseActuelle == PERSONNAGE_SUR_CIBLE) {
-        plateau[posX][posY] = CIBLE;
-    } else {
-        plateau[posX][posY] = VIDE;
-    }
+    plateau[posX][posY] = (caseActuelle == PERSONNAGE_SUR_CIBLE) ? CIBLE : VIDE;
 
     (*nombreDeplacements)++;
 
-    char mouvementCode = determiner_code_mouvement(deltaX, deltaY, joueurPousse);
-    ajouter_deplacement(mouvementCode, deplacement, indiceDeplacement);
+    char code = determiner_code_mouvement(deltaX, deltaY, joueurPousse);
+    ajouter_deplacement(code, deplacement, indiceDeplacement);
 }
 
 /**
