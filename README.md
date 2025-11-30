@@ -1,90 +1,224 @@
 # 🧱 Sokoban en C (Terminal)
 
-Ce projet est une implémentation du jeu **Sokoban**, codé en **C** et jouable dans le **terminal**.  
-Le but : pousser toutes les caisses ($) sur les cibles (.) en un minimum de coups.
+<div align="center">
+
+![Sokoban](https://img.shields.io/badge/Jeu-Sokoban-blue?style=for-the-badge)
+![Langage](https://img.shields.io/badge/Langage-C-00599C?style=for-the-badge&logo=c)
+![Terminal](https://img.shields.io/badge/Interface-Terminal-black?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.0-green?style=for-the-badge)
+
+**Un puzzle game classique revisité dans le terminal !**
+
+[🎮 Fonctionnalités](#-fonctionnalités) • [🕹️ Commandes](#️-commandes) • [🚀 Installation](#-installation) • [📖 Usage](#-usage)
+
+</div>
 
 ---
 
-## 🎮 Fonctionnalités
+## 📝 Description
 
-- Mouvement du joueur : **↑ ↓ ← →**
-- Poussée des caisses
-- Détection de **victoire**
-- Chargement d’un niveau depuis un fichier
-- Réinitialisation du niveau
-- Interface 100% terminal
-- Gestion des collisions (murs, limites, caisses bloquées)
-- Zoom et Dezoom du plateau
-- Retour en arrière
+Ce projet est une implémentation complète du jeu **Sokoban**, codé en **C** et jouable directement dans le **terminal**.  
+
+**Objectif du jeu :** Pousser toutes les caisses (`$`) sur les cibles (`.`) en un minimum de déplacements. Simple en apparence, mais diablement addictif !
 
 ---
 
-## 🕹️ Commandes (touches)
+## ✨ Fonctionnalités
+
+### 🎯 Gameplay de base
+- ✅ Déplacement du joueur dans les 4 directions
+- ✅ Poussée des caisses
+- ✅ Détection automatique de victoire
+- ✅ Gestion des collisions (murs, limites, caisses bloquées)
+
+### 🔧 Fonctionnalités avancées
+- ✅ **Zoom/Dézoom** : ajustez la taille du plateau (échelle 1 à 3)
+- ✅ **Undo** : annulez vos derniers coups
+- ✅ **Sauvegarde** : enregistrez votre progression
+- ✅ **Chargement de niveaux** depuis des fichiers `.sok`
+- ✅ **Compteur de déplacements** en temps réel
+- ✅ **Interface soignée** avec bordures et émojis
+
+---
+
+## 🕹️ Commandes
 
 | Touche | Action |
-|--------|--------|
-|   Z    | Monter |
-|   S    | Descendre |
-|   Q    | Aller à gauche |
-|   D    | Aller à droite |
-|   U    | **Undo** (annuler le dernier mouvement) |
-|   R    | Recommencer le niveau |
-|   X    | Quitter |
+|:------:|:-------|
+| `Z` | ⬆️ Monter |
+| `S` | ⬇️ Descendre |
+| `Q` | ⬅️ Aller à gauche |
+| `D` | ➡️ Aller à droite |
+| `U` | ↩️ **Annuler** le dernier mouvement |
+| `+` | 🔍 **Zoom** (agrandir le plateau) |
+| `-` | 🔎 **Dézoom** (rétrécir le plateau) |
+| `R` | 🔄 Recommencer le niveau |
+| `X` | 🚪 Quitter (avec option de sauvegarde) |
 
-> Remarque : les touches correspondent à la disposition AZERTY (ZQSD) utilisée dans le code. Adapte si besoin.
+> **Note :** Les touches ZQSD correspondent à la disposition AZERTY française.
 
 ---
 
-## 🔧 Compilation
+## 🚀 Installation
 
-Compiler avec GCC :
+### Prérequis
+- GCC (GNU Compiler Collection)
+- Terminal Unix/Linux ou macOS
+
+### Compilation
 
 ```bash
 gcc sokoban.c -o sokoban
 ```
 
+Ou avec les options de compilation recommandées :
+
+```bash
+gcc -Wall -Wextra -std=c99 sokoban.c -o sokoban
+```
+
 ---
 
-## 🎯 Lancer une partie
+## 📖 Usage
 
-Exécuter dans le terminal :
+### Lancer une partie
 
 ```bash
 ./sokoban
 ```
 
-Le programme vous demandera le nom du fichier de niveau à charger, par exemple :
+Le programme vous demandera le nom du fichier de niveau :
 
-```bash
-niveau1.sok
+```
+Saisis le nom d'un fichier (.sok) : niveau1.sok
+```
+
+### Format des fichiers de niveau
+
+Les niveaux sont des fichiers texte `.sok` contenant une grille 12×12 avec ces symboles :
+
+| Symbole | Signification |
+|:-------:|:--------------|
+| `@` | Joueur (Sokoban) |
+| `$` | Caisse |
+| `*` | Caisse sur une cible |
+| `#` | Mur |
+| `.` | Cible (emplacement vide) |
+| `+` | Joueur sur une cible |
+| ` ` | Case vide |
+
+#### Exemple de niveau
+
+```
+############
+#          #
+#  $  .    #
+#  @  #    #
+#     #    #
+############
 ```
 
 ---
 
-## 🗂️ Format d’un fichier de niveau
+## 📁 Structure du projet
 
-Chaque niveau est un tableau ASCII `TAILLE x TAILLE` (par défaut 12×12) utilisant ces caractères :
-
-| Signification | Caractère |
-|--------|--------|
-| PERSONNAGE | @ |
-|   CAISSE   | $ |
-|    MUR     | # |
-|   CIBLE    | . |
-
-Exemple :
-
-``` 
-  ####      
-###  ####   
-#     $ #   
-# #  #$ #   
-# . .#@ #   
-#########
+```
+sokoban/
+├── sokoban.c           # Code source principal
+├── niveau1.sok         # Exemple de niveau
+├── niveau2.sok         # Exemple de niveau
+└── README.md           # Ce fichier
 ```
 
 ---
 
-## 👤 Auteur
+## 🎨 Aperçu
 
-Projet réalisé en C / Exercice d’apprentissage. Par Bastien AULNEY
+```
+╔═══════════════════════════════════╗
+║           niveau1.sok             ║
+╚═══════════════════════════════════╝
+
+Z : haut, Q : gauche, S : bas, D : droite
+X : abandonner, R : recommencer, U : annuler coup
++ : zoom, - : dezoom
+
+Nombre de déplacements : 42
+
+############
+#          #
+#  $  .    #
+#  @  #    #
+#     #    #
+############
+```
+
+---
+
+## 🔍 Fonctionnalités techniques
+
+### Architecture du code
+
+- **Modularité** : code organisé en fonctions spécialisées
+- **Types personnalisés** : `t_Plateau`, `t_tabDeplacement`
+- **Gestion mémoire** : allocation statique pour la performance
+- **Documentation** : commentaires Doxygen sur toutes les fonctions
+
+### Conventions de codage
+
+- ✅ camelCase pour les variables
+- ✅ SNAKE_CASE pour les constantes
+- ✅ snake_case pour les fonctions
+- ✅ Limite de 80 caractères par ligne
+- ✅ Maximum 60 lignes par fonction
+
+---
+
+## 🐛 Limitations connues
+
+- Plateau fixe de 12×12 cases
+- Historique limité à 1000 déplacements
+- Pas de support pour les niveaux XSB standard
+- Nécessite un terminal compatible ANSI
+
+---
+
+## 🚧 Améliorations futures
+
+- [ ] Support des niveaux de taille variable
+- [ ] Chargement de niveaux au format XSB
+- [ ] Système de scores en ligne
+- [ ] Mode multijoueur
+- [ ] Interface graphique avec ncurses
+
+---
+
+## 📚 Ressources
+
+- [Règles du Sokoban](https://fr.wikipedia.org/wiki/Sokoban)
+- [Collection de niveaux](http://www.sokobano.de/wiki/)
+- [Format XSB](http://sokobano.de/wiki/index.php?title=Level_format)
+
+---
+
+## 👨‍💻 Auteur
+
+**Bastien AULNEY**
+
+Projet réalisé dans le cadre d'un exercice d'apprentissage en C.
+
+---
+
+## 📄 Licence
+
+Ce projet est fourni à des fins éducatives. Libre d'utilisation et de modification.
+
+---
+
+<div align="center">
+
+**Bon jeu ! 🎮**
+
+*Si ce projet vous plaît, n'hésitez pas à mettre une ⭐ !*
+
+</div>
