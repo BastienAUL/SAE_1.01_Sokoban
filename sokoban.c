@@ -381,8 +381,7 @@ void restaurer_position_joueur(t_Plateau plateau, int px, int py, int prev_x, in
  * @param ind int* E/S : indice du dernier déplacement (décrémenté).
  * @param nb int* E/S : nombre total de déplacements (décrémenté).
  */
-void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, 
-                         int *ind, int *nb) {
+void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *ind, int *nb) {
     int px = -1;
     int py = -1;
     int dx = 0;
