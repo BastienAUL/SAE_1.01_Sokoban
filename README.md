@@ -110,24 +110,12 @@ Les niveaux sont des fichiers texte `.sok` contenant une grille 12×12 avec ces 
 #### Exemple de niveau
 
 ```
-############
-#          #
-#  $  .    #
-#  @  #    #
-#     #    #
-############
-```
-
----
-
-## 📁 Structure du projet
-
-```
-sokoban/
-├── sokoban.c           # Code source principal
-├── niveau1.sok         # Exemple de niveau
-├── niveau2.sok         # Exemple de niveau
-└── README.md           # Ce fichier
+  ####      
+###  ####   
+#     $ #   
+# #  #$ #   
+# . .#@ #   
+#########
 ```
 
 ---
@@ -143,14 +131,14 @@ Z : haut, Q : gauche, S : bas, D : droite
 X : abandonner, R : recommencer, U : annuler coup
 + : zoom, - : dezoom
 
-Nombre de déplacements : 42
+Nombre de déplacements : 11
 
-############
-#          #
-#  $  .    #
-#  @  #    #
-#     #    #
-############
+  ####      
+###  ####   
+#       #   
+# #@ #$ #   
+# $ .#@ #   
+#########
 ```
 
 ---
@@ -180,16 +168,6 @@ Nombre de déplacements : 42
 - Historique limité à 1000 déplacements
 - Pas de support pour les niveaux XSB standard
 - Nécessite un terminal compatible ANSI
-
----
-
-## 🚧 Améliorations futures
-
-- [ ] Support des niveaux de taille variable
-- [ ] Chargement de niveaux au format XSB
-- [ ] Système de scores en ligne
-- [ ] Mode multijoueur
-- [ ] Interface graphique avec ncurses
 
 ---
 
