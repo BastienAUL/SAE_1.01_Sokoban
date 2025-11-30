@@ -44,15 +44,20 @@ typedef char t_tabDeplacement[MAX];
 void charger_partie(t_Plateau plateau, char fichier[]);
 void enregistrer_partie(t_Plateau plateau, char fichier[]);
 void afficher_entete(char *nomFichier, int nombreDeplacements);
+void afficher_caractere_zoom(char c, int zoom);
 void afficher_plateau(t_Plateau plateau, int zoom);
 bool gagne(t_Plateau plateau);
 int kb_hit();
 void enregistrer_deplacements(t_tabDeplacement t, int nb, char fic[]);
 void trouver_position_joueur(t_Plateau plateau, int *posX, int *posY);
 char lire_touche();
-char determiner_code_mouvement(int deltaX, int deltaY, bool pousse);
-void annuler_deplacement(t_Plateau p, t_tabDeplacement dep, int *ind, int *nb);
+void determiner_direction(char code, int *dx, int *dy);
+bool est_poussee(char code);
+void annuler_poussee_caisse(t_Plateau plateau, int px, int py, int dx, int dy);
+void restaurer_position_joueur(t_Plateau plateau, int px, int py, int prev_x, int prev_y);
+void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *ind, int *nb);
 void ajouter_deplacement(char code, t_tabDeplacement deplacements, int *indice);
+char determiner_code_mouvement(int deltaX, int deltaY, bool pousse);
 void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom, t_tabDeplacement deplacement, int *indiceDeplacement);
 bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom, t_tabDeplacement deplacement, int *indiceDeplacement);
 void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements, t_tabDeplacement deplacement, int *indiceDeplacement);
@@ -289,25 +294,102 @@ bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, i
 }
 
 /**
- * @brief Annule le dernier déplacement enregistré.
- * @param plateau t_Plateau E/S : plateau à modifier pour revenir à l'état précédent.
- * @param deplacement t_tabDeplacement E : tableau contenant l'historique des déplacements.
- * @param ind int* E/S : indice du dernier déplacement à annuler (décrémenté).
- * @param nb int* E/S : nombre total de déplacements (décrémenté si possible).
+ * @brief Détermine la direction d'un déplacement à partir de son code.
+ * @param code char E : code du déplacement ('h','H','b','B','g','G','d','D').
+ * @param dx int* S : déplacement en X (-1, 0 ou 1).
+ * @param dy int* S : déplacement en Y (-1, 0 ou 1).
  */
-void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *ind, int *nb)
-{
+void determiner_direction(char code, int *dx, int *dy) {
+    if (code == 'h' || code == 'H') {
+        *dx = -1;
+        *dy = 0;
+    } else if (code == 'b' || code == 'B') {
+        *dx = 1;
+        *dy = 0;
+    } else if (code == 'g' || code == 'G') {
+        *dx = 0;
+        *dy = -1;
+    } else if (code == 'd' || code == 'D') {
+        *dx = 0;
+        *dy = 1;
+    }
+}
+
+/**
+ * @brief Vérifie si un code représente un déplacement avec poussée de caisse.
+ * @param code char E : code du déplacement.
+ * @return true si le code est en majuscule (poussée).
+ */
+bool est_poussee(char code) {
+    return (code == 'H' || code == 'B' || code == 'G' || code == 'D');
+}
+
+/**
+ * @brief Annule le déplacement d'une caisse lors d'un undo.
+ * @param plateau t_Plateau E/S : plateau à modifier.
+ * @param px int E : position X actuelle du joueur.
+ * @param py int E : position Y actuelle du joueur.
+ * @param dx int E : direction X du déplacement annulé.
+ * @param dy int E : direction Y du déplacement annulé.
+ */
+void annuler_poussee_caisse(t_Plateau plateau, int px, int py, int dx, int dy) {
+    int box_x = px + dx;
+    int box_y = py + dy;
+    bool caisse_etait_sur_cible;
+
+    caisse_etait_sur_cible = (plateau[box_x][box_y] == CAISSE_SUR_CIBLE);
+
+    if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) {
+        plateau[px][py] = CAISSE_SUR_CIBLE;
+    } else {
+        plateau[px][py] = CAISSE;
+    }
+
+    if (caisse_etait_sur_cible) {
+        plateau[box_x][box_y] = CIBLE;
+    } else {
+        plateau[box_x][box_y] = VIDE;
+    }
+}
+
+/**
+ * @brief Remet le joueur à sa position précédente lors d'un undo.
+ * @param plateau t_Plateau E/S : plateau à modifier.
+ * @param px int E : position X actuelle du joueur.
+ * @param py int E : position Y actuelle du joueur.
+ * @param prev_x int E : position X précédente.
+ * @param prev_y int E : position Y précédente.
+ */
+void restaurer_position_joueur(t_Plateau plateau, int px, int py, int prev_x, int prev_y) {
+    if (plateau[prev_x][prev_y] == CIBLE) {
+        plateau[prev_x][prev_y] = PERSONNAGE_SUR_CIBLE;
+    } else {
+        plateau[prev_x][prev_y] = PERSONNAGE;
+    }
+
+    if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) {
+        plateau[px][py] = CIBLE;
+    } else if (plateau[px][py] == PERSONNAGE) {
+        plateau[px][py] = VIDE;
+    }
+}
+
+/**
+ * @brief Annule le dernier déplacement enregistré.
+ * @param plateau t_Plateau E/S : plateau à modifier.
+ * @param deplacement t_tabDeplacement E : historique des déplacements.
+ * @param ind int* E/S : indice du dernier déplacement (décrémenté).
+ * @param nb int* E/S : nombre total de déplacements (décrémenté).
+ */
+void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, 
+                         int *ind, int *nb) {
     int px = -1;
     int py = -1;
     int dx = 0;
     int dy = 0;
-    int prev_x = 0;
-    int prev_y = 0;
-    int box_x = 0;
-    int box_y = 0;
+    int prev_x;
+    int prev_y;
     char code;
-    bool poussait = false;
-    bool caisse_etait_sur_cible = false;
 
     if (*ind == 0) {
         return;
@@ -316,84 +398,17 @@ void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *i
     (*ind)--;
     code = deplacement[*ind];
 
-    if (code == 'h' || code == 'H') {
-        dx = -1;
-        dy = 0;
-    }
-    else if (code == 'b' || code == 'B') {
-        dx = 1;
-        dy = 0;
-    }
-    else if (code == 'g' || code == 'G') {
-        dx = 0;
-        dy = -1;
-    }
-    else if (code == 'd' || code == 'D') {
-        dx = 0;
-        dy = 1;
-    }
-
-    if (code == 'H' || code == 'B' || code == 'G' || code == 'D') {
-        poussait = true;
-    }
-
+    determiner_direction(code, &dx, &dy);
     trouver_position_joueur(plateau, &px, &py);
-
-    if (px < 0 || py < 0) {
-        return;
-    }
-
+    
     prev_x = px - dx;
     prev_y = py - dy;
 
-    if (prev_x < 0 || prev_x >= TAILLE || prev_y < 0 || prev_y >= TAILLE) {
-        return;
+    if (est_poussee(code)) {
+        annuler_poussee_caisse(plateau, px, py, dx, dy);
     }
 
-    if (poussait == true) {
-
-        box_x = px + dx;
-        box_y = py + dy;
-
-        if (box_x < 0 || box_x >= TAILLE || box_y < 0 || box_y >= TAILLE) {
-            return;
-        }
-
-        if (plateau[box_x][box_y] == CAISSE_SUR_CIBLE) {
-            caisse_etait_sur_cible = true;
-        }
-        else {
-            caisse_etait_sur_cible = false;
-        }
-
-        if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) { 
-            plateau[px][py] = CAISSE_SUR_CIBLE;
-        }
-        else {
-            plateau[px][py] = CAISSE;
-        }
-
-        if (caisse_etait_sur_cible == true) {
-            plateau[box_x][box_y] = CIBLE;
-        }
-        else {
-            plateau[box_x][box_y] = VIDE;
-        }
-    }
-
-    if (plateau[prev_x][prev_y] == CIBLE) {
-        plateau[prev_x][prev_y] = PERSONNAGE_SUR_CIBLE;
-    }
-    else {
-        plateau[prev_x][prev_y] = PERSONNAGE;
-    }
-
-    if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) {
-        plateau[px][py] = CIBLE;
-    }
-    else if (plateau[px][py] == PERSONNAGE) {
-        plateau[px][py] = VIDE;
-    }
+    restaurer_position_joueur(plateau, px, py, prev_x, prev_y);
 
     if (*nb > 0) {
         (*nb)--;
