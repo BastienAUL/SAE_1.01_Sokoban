@@ -1,9 +1,9 @@
 /**
  * @file sokoban.c
- * @brief Jeu Sokoban 12x12 avec déplacement, sauvegarde et chargement.
+ * @brief Jeu Sokoban 12x12 avec déplacement, zoom , annulation , sauvegarde et chargement.
  * @author Bastien AULNEY
- * @version 1.0
- * @date 2025-02-08
+ * @version 2.0
+ * @date 2025-11-30
  */
 
 #include <termios.h>
@@ -15,6 +15,7 @@
 #include <string.h>
 
 #define TAILLE 12
+#define MAX 1000
 
 const char PERSONNAGE = '@';
 const char PERSONNAGE_SUR_CIBLE = '+';
@@ -32,25 +33,29 @@ const char DROITE = 'd';
 const char QUITTER = 'x';
 const char RECOMMENCER = 'r';
 const char OUI = 'o';
-const char ZOOM_IN = 'p';
-const char ZOOM_OUT = 'm';
+const char ZOOM_IN = '+';
+const char ZOOM_OUT = '-';
+const char UNDO = 'u';
 
 typedef char t_Plateau[TAILLE][TAILLE];
-typedef char t_tabDeplacement[1000];
+typedef char t_tabDeplacement[MAX];
 
 /* --- Prototypes --- */
 void charger_partie(t_Plateau plateau, char fichier[]);
 void enregistrer_partie(t_Plateau plateau, char fichier[]);
 void afficher_entete(char *nomFichier, int nombreDeplacements);
 void afficher_plateau(t_Plateau plateau, int zoom);
-void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom);
 bool gagne(t_Plateau plateau);
 int kb_hit();
-
+void enregistrer_deplacements(t_tabDeplacement t, int nb, char fic[]);
 void trouver_position_joueur(t_Plateau plateau, int *posX, int *posY);
 char lire_touche();
-bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom);
-void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements);
+char determiner_code_mouvement(int deltaX, int deltaY, bool pousse);
+void annuler_deplacement(t_Plateau p, t_tabDeplacement dep, int *ind, int *nb);
+void ajouter_deplacement(char code, t_tabDeplacement deplacements, int *indice);
+void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom, t_tabDeplacement deplacement, int *indiceDeplacement);
+bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom, t_tabDeplacement deplacement, int *indiceDeplacement);
+void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements, t_tabDeplacement deplacement, int *indiceDeplacement);
 
 /* ========================================================= */
 /*                         MAIN                              */
@@ -62,6 +67,9 @@ void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int delt
  */
 int main(){
     t_Plateau plateau;
+    t_tabDeplacement deplacement;
+    int indiceDeplacement = 0;
+    char nomSauvegardeDep[50];
     char nomFichier[50];
     int nombreDeplacements = 0;
     int zoom = 1; 
@@ -74,10 +82,12 @@ int main(){
     afficher_plateau(plateau,zoom);
 
     while (!gagne(plateau)) {
-        deplacer(plateau, nomFichier, &nombreDeplacements, &zoom);
+        deplacer(plateau, nomFichier, &nombreDeplacements, &zoom, deplacement, &indiceDeplacement);
     }
-
     printf("\n🎉 Félicitations, vous avez gagné en %d déplacements ! 🎉\n", nombreDeplacements);
+    printf("Nom du fichier de sauvegarde des déplacements : (.dep)");
+    scanf("%s", nomSauvegardeDep);
+    enregistrer_deplacements(deplacement, indiceDeplacement, nomSauvegardeDep);
     return EXIT_SUCCESS;
 }
 
@@ -96,34 +106,42 @@ void afficher_entete(char *nomFichier, int nombreDeplacements) {
     printf("║           %s             ║\n", nomFichier);
     printf("╚═══════════════════════════════════╝\n\n");
     printf("Z : haut, Q : gauche, S : bas, D : droite\n");
-    printf("X : abandonner, R : recommencer\n");
+    printf("X : abandonner, R : recommencer, U : annuler coup\n");
+    printf("+ : zoom, - : dezoom\n");
     printf("\nNombre de déplacements : %d\n\n", nombreDeplacements);
+}
+
+/**
+ * @brief Affiche un caractère répété selon le zoom.
+ * @param c char E : caractère à afficher.
+ * @param zoom int E : nombre de répétitions.
+ */
+void afficher_caractere_zoom(char c, int zoom) {
+    for (int k = 0; k < zoom; k++) {
+        printf("%c", c);
+    }
 }
 
 /**
  * @brief Affiche visuellement le plateau de jeu.
  * @param plateau t_Plateau E : état actuel du plateau.
+ * @param zoom int E : niveau de zoom (1 à 3).
  */
 void afficher_plateau(t_Plateau plateau, int zoom) {
     for (int i = 0; i < TAILLE; i++) {
-        for (int ligne = 0; ligne < zoom; ligne++){
+        for (int ligne = 0; ligne < zoom; ligne++) {
             for (int j = 0; j < TAILLE; j++) {
                 char caseCourante = plateau[i][j];
-                if (caseCourante == PERSONNAGE || caseCourante == PERSONNAGE_SUR_CIBLE) {
-                    for (int k = 0; k < zoom; k++){
-                        printf("%c", PERSONNAGE);
-                    }
+                char aAfficher = caseCourante;
+                
+                if (caseCourante == PERSONNAGE_SUR_CIBLE) {
+                    aAfficher = PERSONNAGE;
                 }
-                else if (caseCourante == CAISSE || caseCourante == CAISSE_SUR_CIBLE) {
-                    for (int k = 0; k < zoom; k++){
-                        printf("%c", CAISSE);
-                    }
+                else if (caseCourante == CAISSE_SUR_CIBLE) {
+                    aAfficher = CAISSE;
                 }
-                else{
-                    for (int k = 0; k < zoom; k++){
-                        printf("%c", caseCourante);
-                    }
-                }
+                
+                afficher_caractere_zoom(aAfficher, zoom);
             }
             printf("\n");
         }
@@ -139,7 +157,7 @@ void afficher_plateau(t_Plateau plateau, int zoom) {
  * @param nomFichier char* E : nom du fichier chargé.
  * @param nombreDeplacements int* E/S : compteur à incrémenter.
  */
-void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom) {
+void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom, t_tabDeplacement deplacement, int *indiceDeplacement) {
     int posX = -1;
     int posY = -1;
     trouver_position_joueur(plateau, &posX, &posY);
@@ -149,7 +167,7 @@ void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int 
         return;
     }
 
-    if (traiter_touche_speciale(touche, plateau, nomFichier, nombreDeplacements, zoom)) {
+    if (traiter_touche_speciale(touche, plateau, nomFichier, nombreDeplacements, zoom, deplacement, indiceDeplacement)) {
         return;
     }
 
@@ -168,7 +186,7 @@ void deplacer(t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int 
         return;
     }
 
-    deplacer_joueur(plateau, posX, posY, deltaX, deltaY, nombreDeplacements);
+    deplacer_joueur(plateau, posX, posY, deltaX, deltaY, nombreDeplacements, deplacement, indiceDeplacement);
     afficher_entete(nomFichier, *nombreDeplacements);
     afficher_plateau(plateau,*zoom);
 }
@@ -203,23 +221,30 @@ char lire_touche() {
 }
 
 /**
- * @brief Traite les touches spéciales (quitter, sauvegarder, recommencer).
- * @param touche char E : touche pressée.
- * @param plateau t_Plateau E/S : plateau modifié selon la commande.
- * @param nomFichier char* E : nom du fichier chargé.
+ * @brief Traite les touches spéciales : quitter, recommencer, zoom, undo.
+ * @param touche char E : touche pressée par le joueur.
+ * @param plateau t_Plateau E/S : plateau pouvant être modifié.
+ * @param nomFichier char* E : nom du fichier du niveau.
  * @param nombreDeplacements int* E/S : compteur de déplacements.
- * @return true si l'action consomme le tour, false sinon.
+ * @param zoom int* E/S : niveau actuel de zoom.
+ * @param deplacement t_tabDeplacement E/S : tableau des déplacements.
+ * @param indiceDeplacement int* E/S : indice courant dans le tableau de déplacements.
+ * @return true si la touche correspond à une commande spéciale.
  */
-bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom) {
+bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, int *nombreDeplacements, int *zoom, t_tabDeplacement deplacement, int *indiceDeplacement) {
     if (touche == QUITTER) {
         printf("Voulez-vous sauvegarder avant de quitter ? (o/n) : ");
         char reponse;
         scanf(" %c", &reponse);
         if (reponse == OUI) {
             char nomSauvegarde[50];
-            printf("Nom du fichier de sauvegarde : ");
+            char nomSauvegardeDep[50];
+            printf("Nom du fichier de sauvegarde : (.sok)");
             scanf("%s", nomSauvegarde);
+            printf("Nom du fichier de sauvegarde des déplacements : (.dep)");
+            scanf("%s", nomSauvegardeDep);
             enregistrer_partie(plateau, nomSauvegarde);
+            enregistrer_deplacements(deplacement, *indiceDeplacement, nomSauvegardeDep);
             printf("Partie sauvegardée.\n");
             exit(0);
         }
@@ -253,7 +278,149 @@ bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, i
         return true;
     }
 
+    else if (touche == UNDO) {
+        annuler_deplacement(plateau, deplacement, indiceDeplacement, nombreDeplacements);
+        afficher_entete(nomFichier, *nombreDeplacements);
+        afficher_plateau(plateau, *zoom);
+        return true;
+    }
+
     return false;
+}
+
+/**
+ * @brief Annule le dernier déplacement enregistré.
+ * @param plateau t_Plateau E/S : plateau à modifier pour revenir à l'état précédent.
+ * @param deplacement t_tabDeplacement E : tableau contenant l'historique des déplacements.
+ * @param ind int* E/S : indice du dernier déplacement à annuler (décrémenté).
+ * @param nb int* E/S : nombre total de déplacements (décrémenté si possible).
+ */
+void annuler_deplacement(t_Plateau plateau, t_tabDeplacement deplacement, int *ind, int *nb)
+{
+    int px = -1;
+    int py = -1;
+    int dx = 0;
+    int dy = 0;
+    int prev_x = 0;
+    int prev_y = 0;
+    int box_x = 0;
+    int box_y = 0;
+    char code;
+    bool poussait = false;
+    bool caisse_etait_sur_cible = false;
+
+    if (*ind == 0) {
+        return;
+    }
+
+    (*ind)--;
+    code = deplacement[*ind];
+
+    if (code == 'h' || code == 'H') {
+        dx = -1;
+        dy = 0;
+    }
+    else if (code == 'b' || code == 'B') {
+        dx = 1;
+        dy = 0;
+    }
+    else if (code == 'g' || code == 'G') {
+        dx = 0;
+        dy = -1;
+    }
+    else if (code == 'd' || code == 'D') {
+        dx = 0;
+        dy = 1;
+    }
+
+    if (code == 'H' || code == 'B' || code == 'G' || code == 'D') {
+        poussait = true;
+    }
+
+    trouver_position_joueur(plateau, &px, &py);
+
+    if (px < 0 || py < 0) {
+        return;
+    }
+
+    prev_x = px - dx;
+    prev_y = py - dy;
+
+    if (prev_x < 0 || prev_x >= TAILLE || prev_y < 0 || prev_y >= TAILLE) {
+        return;
+    }
+
+    if (poussait == true) {
+
+        box_x = px + dx;
+        box_y = py + dy;
+
+        if (box_x < 0 || box_x >= TAILLE || box_y < 0 || box_y >= TAILLE) {
+            return;
+        }
+
+        if (plateau[box_x][box_y] == CAISSE_SUR_CIBLE) {
+            caisse_etait_sur_cible = true;
+        }
+        else {
+            caisse_etait_sur_cible = false;
+        }
+
+        if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) { 
+            plateau[px][py] = CAISSE_SUR_CIBLE;
+        }
+        else {
+            plateau[px][py] = CAISSE;
+        }
+
+        if (caisse_etait_sur_cible == true) {
+            plateau[box_x][box_y] = CIBLE;
+        }
+        else {
+            plateau[box_x][box_y] = VIDE;
+        }
+    }
+
+    if (plateau[prev_x][prev_y] == CIBLE) {
+        plateau[prev_x][prev_y] = PERSONNAGE_SUR_CIBLE;
+    }
+    else {
+        plateau[prev_x][prev_y] = PERSONNAGE;
+    }
+
+    if (plateau[px][py] == PERSONNAGE_SUR_CIBLE) {
+        plateau[px][py] = CIBLE;
+    }
+    else if (plateau[px][py] == PERSONNAGE) {
+        plateau[px][py] = VIDE;
+    }
+
+    if (*nb > 0) {
+        (*nb)--;
+    }
+}
+
+/**
+ * @brief Détermine le code de mouvement selon la direction et si une caisse est poussée.
+ * @param deltaX int E : déplacement en X (-1, 0, ou 1).
+ * @param deltaY int E : déplacement en Y (-1, 0, ou 1).
+ * @param pousse bool E : true si le joueur pousse une caisse.
+ * @return char : code du mouvement ('h','H','b','B','g','G','d','D') ou '\0'.
+ */
+char determiner_code_mouvement(int deltaX, int deltaY, bool pousse) {
+    if (deltaX == -1) {
+        return pousse ? 'H' : 'h';
+    }
+    if (deltaX == 1) {
+        return pousse ? 'B' : 'b';
+    }
+    if (deltaY == -1) {
+        return pousse ? 'G' : 'g';
+    }
+    if (deltaY == 1) {
+        return pousse ? 'D' : 'd';
+    }
+    return '\0';
 }
 
 /**
@@ -264,13 +431,15 @@ bool traiter_touche_speciale(char touche, t_Plateau plateau, char *nomFichier, i
  * @param deltaX int E : direction en X.
  * @param deltaY int E : direction en Y.
  * @param nombreDeplacements int* E/S : compteur de mouvements.
+ * @param deplacement t_tabDeplacement E/S : tableau des déplacements.
+ * @param indiceDeplacement int* E/S : indice dans le tableau de déplacements.
  */
-void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements) {
+void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int deltaY, int *nombreDeplacements, t_tabDeplacement deplacement, int *indiceDeplacement) {
     int nouvelleX = posX + deltaX;
     int nouvelleY = posY + deltaY;
-
     char caseCible = plateau[nouvelleX][nouvelleY];
     char caseActuelle = plateau[posX][posY];
+    bool joueurPousse = false;
 
     if (caseCible == MUR) {
         return;
@@ -296,7 +465,7 @@ void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int delt
         } else {
             plateau[nouvelleX][nouvelleY] = PERSONNAGE;
         }
-
+        joueurPousse = true;
 
     } else if (caseCible == VIDE || caseCible == CIBLE) {
         if (caseCible == CIBLE) {
@@ -304,7 +473,6 @@ void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int delt
         } else {
             plateau[nouvelleX][nouvelleY] = PERSONNAGE;
         }
-
     } else {
         return;
     }
@@ -314,8 +482,25 @@ void deplacer_joueur(t_Plateau plateau, int posX, int posY, int deltaX, int delt
     } else {
         plateau[posX][posY] = VIDE;
     }
+
     (*nombreDeplacements)++;
+
+    char mouvementCode = determiner_code_mouvement(deltaX, deltaY, joueurPousse);
+    ajouter_deplacement(mouvementCode, deplacement, indiceDeplacement);
 }
+
+/**
+ * @brief Ajoute un déplacement au tableau des déplacements.
+ * @param code char E : code du déplacement ('h','H','g','G','b','B','d','D').
+ * @param deplacements t_tabDeplacement E/S : tableau où ajouter le déplacement.
+ * @param indice int* E/S : position où insérer le déplacement, sera incrémentée.
+ */
+void ajouter_deplacement(char code, t_tabDeplacement deplacements, int *indice) {
+    deplacements[*indice] = code;
+    (*indice)++;
+}
+
+
 
  /* ========================================================= */
 /*                         VICTOIRE                          */
@@ -410,5 +595,18 @@ void enregistrer_partie(t_Plateau plateau, char fichier[]){
         }
         fwrite(&finDeLigne, sizeof(char), 1, f);
     }
+    fclose(f);
+}
+
+/**
+ * @brief Enregistre dans un fichier la liste des déplacements effectués.
+ * @param t t_tabDeplacement E : tableau contenant les déplacements.
+ * @param nb int E : nombre réel de déplacements à écrire.
+ * @param fic char[] E : nom du fichier .dep de destination.
+ */
+void enregistrer_deplacements(t_tabDeplacement t, int nb, char fic[]){
+    FILE * f;
+    f = fopen(fic, "w");
+    fwrite(t,sizeof(char), nb, f);
     fclose(f);
 }
