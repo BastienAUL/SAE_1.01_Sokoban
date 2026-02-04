@@ -19,7 +19,7 @@
 
 Ce projet est une implémentation complète du jeu **Sokoban**, codé en **C** et jouable directement dans le **terminal**.  
 
-**Objectif du jeu :** Pousser toutes les caisses (`$`) sur les cibles (`.`) en un minimum de déplacements. Simple en apparence, mais diablement addictif !
+**Objectif du jeu :** Pousser toutes les caisses (`$`) sur les cibles (`.`) en un minimum de déplacements.
 
 ---
 
